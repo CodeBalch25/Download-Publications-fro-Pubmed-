@@ -1,266 +1,51 @@
-# PubMed Research Scraper Toolkit
+# PubMed Research Toolkit
 
-Automated Python tools for searching, downloading, and analyzing research publications from PubMed and PubMed Central. Essential toolkit for researchers, data scientists, and bioinformatics professionals.
+An older Python research-automation project for publication search, metadata export and resumable collection.
 
-## Features
+## Problem and approach
 
-- **Automated PDF Download**: Bulk download PDFs from PubMed Central by PM IDs
-- **Search & Query**: Advanced search functionality using PubMed API
-- **Resume Capability**: Continue interrupted downloads from breakpoint
-- **Retry Mechanism**: Automatic retry for failed downloads
-- **Proxy Support**: Built-in proxy pool to bypass anti-scraping measures
-- **Metadata Extraction**: Extract figures, text, and metadata from PDFs
-- **JSON Output**: Structured data export for further analysis
+Literature review involves repeated searches and metadata collection. These scripts collect PubMed search results into JSON and include checkpoint and retry logic for interrupted jobs, providing inputs for further research analysis.
 
-## Tech Stack
+## What is in the repository
 
-- **Language**: Python 3.8+
-- **APIs**: PubMed E-utilities, PubMed Central
-- **Libraries**: 
-  - Requests for HTTP operations
-  - BeautifulSoup for HTML parsing
-  - JSON for data storage
-- **Features**: Web scraping, API integration, file I/O
+- `pubmed_search.py`: uses `pymed` to query PubMed and writes `data.json`. The current query and dates are hard-coded for a 2020 search; edit and review them before use.
+- `pubmed_central.py`: historical PMID-based downloader with lock-file progress, failed-item tracking and resume/retry options.
+- `pubmed_info.py` and `pubmed_info.reader.py`: exploratory metadata and PDF-reading utilities.
+- `requirements.txt`: the actual pinned dependencies, including Requests, lxml, pymed, BeautifulSoup, pdfminer and fake-useragent. These are older pins, not a tested modern environment.
 
-## Installation
+The project has not been validated against current PubMed/PMC pages or current Python dependencies. No download throughput, guaranteed reliability or production scale is claimed.
 
-### Prerequisites
-- Python 3.8 or higher
-- pip package manager
+## Access policy and modernization
 
-### Setup
+The legacy downloader scrapes HTML and contains proxy-pool code. It is not the recommended path for a current automated or bulk PMC collection.
 
-1. Clone the repository:
-```bash
-git clone https://github.com/CodeBalch25/Download-Publications-fro-Pubmed-.git
-cd Download-Publications-fro-Pubmed-
+PMC restricts automated content retrieval to its approved services, including the PMC Cloud Service, OAI-PMH, E-Utilities and BioC API. Use those services and respect article licenses. Do not rotate proxies to bypass access controls, rate limits or a 403 response. [PMC developer guidance](https://pmc.ncbi.nlm.nih.gov/tools/developers/).
+
+Before using this project for a new collection:
+
+1. Replace the legacy HTML downloader with an approved retrieval service.
+2. Configure the query, date range and request limits explicitly.
+3. Update dependencies and validate the environment in isolation.
+4. Test retry, resume, output paths, missing PDFs and partial downloads.
+5. Preserve metadata provenance and confirm rights for each collection.
+
+## Historical command interface
+
+The following flags describe the legacy implementation, not an endorsement to use it for current bulk retrieval:
+
+```text
+pubmed_central.py <PMIDs or source JSON>
+-o, --output-dir
+--resume
+--retry
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+Source JSON consists of records with a numeric `pmid` field. The current output directory is assembled by string concatenation, so custom paths require review, including a trailing directory separator.
 
-## Components
+Publication search is configured in the script and invoked with `python pubmed_search.py`; it is not a general query CLI.
 
-### 1. pubmed_central.py - PDF Downloader
+## Attribution and licensing
 
-Download PDFs from PubMed Central using PMIDs (PubMed IDs).
+Author credited by the existing project documentation: Timothy Balch, [CodeBalch25](https://github.com/CodeBalch25).
 
-**Features:**
-- Resume from breakpoint
-- Retry failed tasks
-- Proxy pool support
-- Batch downloading
-
-**Usage:**
-```bash
-# Download specific PMIDs
-python pubmed_central.py 29138661 29123944
-
-# Download from JSON source file
-python pubmed_central.py data.json -o ./output
-
-# Resume interrupted download
-python pubmed_central.py data.json --resume
-
-# Retry failed downloads
-python pubmed_central.py data.json --retry
-
-# Use proxy pool
-python pubmed_central.py data.json --use-proxy
-```
-
-**Arguments:**
-- `-o, --output-dir`: Specify output directory
-- `--resume`: Resume from existing lock file
-- `--retry`: Retry failed tasks
-- `--use-proxy`: Use proxy pool for requests
-
-### 2. pubmed_search.py - Publication Search
-
-Search and retrieve publication metadata from PubMed.
-
-**Usage:**
-```python
-# Configure search query (modify in script)
-query = "machine learning AND healthcare"
-max_results = 1000
-
-# Run search
-python pubmed_search.py
-
-# Output: data.json with search results
-```
-
-**Output Format (data.json):**
-```json
-[
-    {
-        "pmid": 29138661,
-        "title": "Publication Title",
-        "authors": ["Author 1", "Author 2"],
-        "journal": "Journal Name",
-        "year": 2020,
-        "abstract": "Publication abstract..."
-    }
-]
-```
-
-### 3. pubmed_info.py - Metadata Extraction
-
-Extract metadata, figures, and text from downloaded PDFs.
-
-**Features:**
-- PDF text extraction
-- Figure extraction
-- Metadata parsing
-- Structured data export
-
-**Status:** Work in Progress (WIP)
-
-## PMID Source File Schema
-
-```json
-[
-    {
-        "pmid": 29138661,
-        "title": "Optional title",
-        "journal": "Optional journal name"
-    },
-    {
-        "pmid": 29123944
-    }
-]
-```
-
-The `pmid` field is required; other fields are optional and will be ignored during download.
-
-## Advanced Usage Examples
-
-### Example 1: Search and Download Pipeline
-```bash
-# Step 1: Search for publications
-python pubmed_search.py  # Generates data.json
-
-# Step 2: Download PDFs from search results
-python pubmed_central.py data.json -o ./research_papers
-```
-
-### Example 2: Download with Proxy Rotation
-```bash
-# For large batches or rate-limited scenarios
-python pubmed_central.py data.json --use-proxy --retry
-```
-
-### Example 3: Resume After Network Interruption
-```bash
-# If download was interrupted
-python pubmed_central.py data.json --resume
-```
-
-## Project Structure
-
-```
-Download-Publications-fro-Pubmed-/
-├── pubmed_central.py       # PDF downloader
-├── pubmed_search.py        # PubMed search tool
-├── pubmed_info.py          # Metadata extractor (WIP)
-├── pubmed_info.reader.py   # PDF reader utilities
-├── requirements.txt        # Python dependencies
-└── README.md              # Documentation
-```
-
-## Dependencies
-
-```
-requests>=2.28.0
-beautifulsoup4>=4.11.0
-lxml>=4.9.0
-PyPDF2>=3.0.0
-```
-
-## Use Cases
-
-1. **Literature Review**: Download hundreds of papers for systematic review
-2. **Meta-Analysis**: Collect publications for quantitative analysis
-3. **Research Database**: Build local repository of domain-specific papers
-4. **Citation Analysis**: Gather papers for network analysis
-5. **Text Mining**: Extract text for NLP and ML projects
-
-## Performance
-
-- **Speed**: Downloads ~100 PDFs per hour (depends on network and PMC server load)
-- **Reliability**: Automatic retry mechanism ensures successful downloads
-- **Scalability**: Handles thousands of PMIDs efficiently
-
-## Features in Development
-
-- [ ] Support for additional input formats (BibTeX, CSV)
-- [ ] Parallel downloading for faster processing
-- [ ] Enhanced metadata extraction
-- [ ] Full-text search within downloaded papers
-- [ ] Export to reference managers (Zotero, Mendeley)
-- [ ] Citation network visualization
-
-## API Rate Limits
-
-**PubMed E-utilities Guidelines:**
-- Maximum 3 requests per second without API key
-- Maximum 10 requests per second with API key
-- Use `--use-proxy` for larger batches
-
-## Troubleshooting
-
-**Issue: Download fails with 403 Forbidden**
-- Solution: Use `--use-proxy` flag to rotate IP addresses
-
-**Issue: Missing PDFs**
-- Some papers may not have free full-text available on PMC
-- Check if paper has open access or institutional access
-
-**Issue: Slow downloads**
-- PMC server load varies by time of day
-- Consider spreading downloads over multiple sessions
-
-## Legal & Ethical Considerations
-
-- Respect publisher copyrights and terms of service
-- Use for research and educational purposes only
-- Adhere to fair use guidelines
-- Do not redistribute copyrighted materials
-- Follow PubMed Central usage policies
-
-## Contributing
-
-Contributions are welcome! Submit issues or pull requests.
-
-## License
-
-MIT License
-
-## Author
-
-**Timothy Balch** - [@CodeBalch25](https://github.com/CodeBalch25)
-
-## Acknowledgments
-
-- NCBI for PubMed and PubMed Central APIs
-- Python community for excellent libraries
-- Bioinformatics research community
-
-## Citations
-
-If you use this toolkit in your research, please cite:
-```
-@software{pubmed_scraper,
-  author = {Balch, Timothy},
-  title = {PubMed Research Scraper Toolkit},
-  year = {2020},
-  url = {https://github.com/CodeBalch25/Download-Publications-fro-Pubmed-}
-}
-```
-
-## Tags
-
-`web-scraping` `bioinformatics` `python` `research-tools` `pubmed` `data-science` `automation` `pdf-extraction` `literature-review` `academic-research`
+Preserve attribution and verify licensing of the source and retrieved publications before reuse. This documentation update does not grant new license rights.
